@@ -87,6 +87,12 @@ jobs:
     name: plan · ${{ needs.resolve-env.outputs.env }}
     runs-on: ubuntu-latest
     needs: [resolve-env, lint]
+    # The github-oidc trust only accepts sub = repo:<org>/<repo>:environment:<env>,
+    # so the plan job must run under the target environment too. deployment: false
+    # keeps plans out of the deployment history.
+    environment:
+      name: ${{ needs.resolve-env.outputs.env }}
+      deployment: false
     permissions:
       id-token: write
       contents: read
