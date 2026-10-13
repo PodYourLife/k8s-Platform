@@ -60,14 +60,10 @@ variable "github_org" {
   default     = "PodYourLife"
 }
 
-variable "allowed_repos" {
-  description = "GitHub repository names (without org prefix) allowed to assume CI roles."
-  type        = list(string)
-}
-
-variable "apply_branch_pattern" {
-  description = "Git branch pattern trusted by the GitHub Actions apply IAM role"
+variable "github_repository" {
+  description = "GitHub repository trusted by the OIDC roles — case-sensitive, as GitHub emits it in the sub claim."
   type        = string
+  default     = "k8s-Platform"
 }
 
 variable "aws_account_id" {

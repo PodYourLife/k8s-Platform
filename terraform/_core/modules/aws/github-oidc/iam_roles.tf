@@ -1,10 +1,25 @@
 # iam_roles.tf
 # Resources: aws_iam_role, aws_iam_policy, aws_iam_role_policy_attachment
 #
-# One role per environment — scoped to the specific GitHub repo and branch.
-# prod role is read-only from local machines; apply is CI-only.
+# One pair of roles per environment. Both roles trust exactly one OIDC subject:
+# a job of the trusted repository running under the GitHub Environment named
+# after var.environment. StringEquals only: no StringLike, no wildcard, and no
+# subject from another environment (a dev job must never assume prod roles).
+# Jobs must declare `environment: <env>`; GitHub then emits
+# sub = repo:<org>/<repo>:environment:<env>.
 
-# ── Terraform plan role — all branches (PR validation) ────────────────────────
+locals {
+  oidc_subject = "repo:${var.github_org}/${var.github_repository}:environment:${var.environment}"
+
+  oidc_trust_condition = {
+    StringEquals = {
+      "token.actions.githubusercontent.com:sub" = local.oidc_subject
+      "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+    }
+  }
+}
+
+# ── Terraform plan role — read-only, environment-scoped ───────────────────────
 
 resource "aws_iam_role" "terraform_plan" {
   name = "${var.cluster_name}-github-terraform-plan"
@@ -17,21 +32,7 @@ resource "aws_iam_role" "terraform_plan" {
       Principal = {
         Federated = aws_iam_openid_connect_provider.github.arn
       }
-      Condition = {
-        StringLike = {
-          "token.actions.githubusercontent.com:sub" = flatten([
-            for repo in var.allowed_repos : [
-              "repo:${var.github_org}/${repo}:ref:refs/heads/${var.environment}",
-              "repo:${var.github_org}/${repo}:environment:${var.environment}",
-              "repo:${var.github_org}/${repo}:ref:refs/heads/main",
-              "repo:${var.github_org}/${repo}:pull_request",
-            ]
-          ])
-        }
-        StringEquals = {
-          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-        }
-      }
+      Condition = local.oidc_trust_condition
     }]
   })
 
@@ -66,9 +67,9 @@ resource "aws_iam_role_policy" "terraform_plan_state_lock" {
   })
 }
 
-# ── Terraform apply role — env branches + main ───────────────────────────────
-# Scoped to env branches (dev, staging, prod) and main.
-# plan role covers env branch, main, and PRs — apply role is restricted to named branches.
+# ── Terraform apply role — environment-scoped ────────────────────────────────
+# Same subject as the plan role: the GitHub Environment protection rules of
+# <env> (required reviewers, branch policy) gate every apply.
 
 resource "aws_iam_role" "terraform_apply" {
   name = "${var.cluster_name}-github-terraform-apply"
@@ -81,31 +82,7 @@ resource "aws_iam_role" "terraform_apply" {
       Principal = {
         Federated = aws_iam_openid_connect_provider.github.arn
       }
-      Condition = {
-        # Allow apply from env branches (dev, staging, prod) and the apply branch pattern.
-        # Feature branches use the plan role only — no apply from PR branches.
-        #
-        # Both `ref:refs/heads/<branch>` and `environment:<name>` subjects are
-        # accepted because the CI apply job runs under `environment: <env>` —
-        # GitHub overrides the sub claim to `environment:<name>` in that case
-        # (push/workflow_dispatch outside an environment keeps the ref form).
-        StringLike = {
-          "token.actions.githubusercontent.com:sub" = flatten([
-            for repo in var.allowed_repos : [
-              "repo:${var.github_org}/${repo}:ref:refs/heads/${var.apply_branch_pattern}",
-              "repo:${var.github_org}/${repo}:ref:refs/heads/dev",
-              "repo:${var.github_org}/${repo}:ref:refs/heads/staging",
-              "repo:${var.github_org}/${repo}:ref:refs/heads/prod",
-              "repo:${var.github_org}/${repo}:environment:dev",
-              "repo:${var.github_org}/${repo}:environment:staging",
-              "repo:${var.github_org}/${repo}:environment:prod",
-            ]
-          ])
-        }
-        StringEquals = {
-          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-        }
-      }
+      Condition = local.oidc_trust_condition
     }]
   })
 
@@ -114,7 +91,7 @@ resource "aws_iam_role" "terraform_apply" {
 
 resource "aws_iam_policy" "terraform_apply" {
   name        = "${var.cluster_name}-github-terraform-apply-policy"
-  description = "Permissions for Terraform apply via GitHub Actions CI — main branch only"
+  description = "Permissions for Terraform apply via GitHub Actions CI — ${var.environment} environment only"
 
   policy = jsonencode({
     Version = "2012-10-17"
