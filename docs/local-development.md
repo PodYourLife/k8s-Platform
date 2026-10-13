@@ -1,3 +1,6 @@
+> [!WARNING]
+> **Obsolete — see [ADR-0001](adr/0001-fondations.md).** This document describes the model replaced by ADR-0001 (environment branches, `__PLACEHOLDER__` hydration, `platform-bot env` commands, AWS as the only target). It will be rewritten in phase A0. Still-valid content is tracked in the [traceability table](adr/0001-foundations/traceability.md).
+
 # Local development — Kind cluster
 
 This guide covers running the full platform stack locally using Kind.

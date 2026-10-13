@@ -1,3 +1,6 @@
+> [!WARNING]
+> **Obsolete — see [ADR-0001](docs/adr/0001-fondations.md).** This document describes the model replaced by ADR-0001 (environment branches, `__PLACEHOLDER__` hydration, `platform-bot env` commands, AWS as the only target). It will be rewritten in phase A2. Still-valid content is tracked in the [traceability table](docs/adr/0001-foundations/traceability.md).
+
 # k8s-platform
 
 GitOps-first Kubernetes platform for PodYourLife — EKS on AWS, managed by Terraform and ArgoCD.
@@ -223,4 +226,4 @@ GPU nodes (g4dn.xlarge) start at `desired_size = 0` — zero cost until a GPU wo
 | ML chart configuration | `kubernetes/helm/ml-batch-job/values.yaml` |
 | Secret management | `docs/examples/external-secret.yaml` |
 | Cost monitoring (OpenCost) | `argocd/platform/opencost/opencost.yaml` |
-| First-time Terraform bootstrap | `docs/examples/terraform-new-env.md` |
+| First-time Terraform bootstrap | To be documented in phase C2 (see `docs/adr/0001-fondations.md`) |
