@@ -191,6 +191,10 @@ Nettoyage, dans cet ordre :
 | Niveaux Pod Security Standards divergents entre les guides Kubernetes et ESO/sécurité. Trancher | A2 |
 | Réécrire les instructions du projet claude.ai et `~/.claude/CLAUDE.md` selon cet ADR. En cas de conflit d'ici là, cet ADR prévaut | A2 |
 | Corriger `skill-quality.md` : arbre de packages fictif (`internal/cluster/status.go`, `internal/helm/scaffold.go`), à l'origine de l'erreur initiale de D7 | B1 |
+| Les instructions du projet claude.ai décrivent encore l'ancien modèle (branches par env, `env add`, placeholders, `istio-ingress` + `image: auto`). Aucune session ne doit s'en servir comme référence d'ici leur réécriture | A2 |
+| Module AWS `github-oidc` : le rôle d'apply de chaque environnement accepte les `sub` des trois environnements. Le restreindre à son seul environnement (principe de l'ADR-0008) | C2 |
+| Identifiant de compte AWS présent dans l'historique public de `main` depuis mars 2026. Décision : accepté et documenté (non secret, compte vidé), pas de réécriture d'historique. Le runbook `credential-leak` couvre la purge via le support GitHub si une vraie fuite survient | B1 |
+| Remplacer le contrôle grep de `validate-pr.yml` par gitleaks avec un `.gitleaks.toml` versionné (règles ARN et identifiant de compte), binaire épinglé avec vérification du checksum | B1 |
 
 ### Risques
 - **Le contrat devient l'API centrale.** Toute modification est un changement versionné, avec un label `platform.podyourlife.io/contract-version`.
