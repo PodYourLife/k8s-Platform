@@ -1,6 +1,18 @@
 # Module: github-oidc
 
-Configures GitHub Actions as a trusted OIDC identity provider in AWS. Provisions two IAM roles — one for `terraform plan` (all branches) and one for `terraform apply` (main branch only).
+Configures GitHub Actions as a trusted OIDC identity provider in AWS. Provisions two IAM roles for one environment — `terraform plan` (read-only) and `terraform apply`.
+
+Both roles trust exactly one subject, with `StringEquals` only (no `StringLike`, no wildcard):
+
+```
+token.actions.githubusercontent.com:sub = repo:<github_org>/<github_repository>:environment:<environment>
+token.actions.githubusercontent.com:aud = sts.amazonaws.com
+```
+
+A job can assume these roles only if it runs under the GitHub Environment named after `environment`, so that environment's protection rules gate every plan and apply. A job of another environment (for example `dev`) can never assume the `prod` roles. See ADR-0008.
+
+> [!IMPORTANT]
+> `StringEquals` is case-sensitive. `github_repository` must match the repository name exactly as GitHub emits it in the `sub` claim (`k8s-Platform`, not `k8s-platform`). If the organization or repository enables a customized or immutable subject claim format, the expected `sub` changes and this module must be updated first.
 
 No static credentials are stored in GitHub. The only GitHub secret is the role ARN.
 
@@ -20,12 +32,14 @@ GitHub Actions workflow
 module "github_oidc" {
   source = "../../modules/github-oidc"
 
-  cluster_name = "dev-k8s"
-  github_org   = "PodYourLife"
-  github_repo  = "k8s-platform"
-  aws_region   = "eu-west-3"
-  state_bucket = "k8s-platform-terraform-state"
-  lock_table   = "k8s-platform-terraform-locks"
+  cluster_name      = var.cluster_name
+  github_org        = "PodYourLife"
+  github_repository = "k8s-Platform"
+  environment       = var.environment
+  aws_region        = var.aws_region
+  aws_account_id    = var.aws_account_id
+  state_bucket      = var.state_bucket
+  lock_table        = var.lock_table
 }
 ```
 
@@ -36,13 +50,20 @@ AWS_TERRAFORM_PLAN_ROLE_ARN  = <module.github_oidc.plan_role_arn>
 AWS_TERRAFORM_ROLE_ARN       = <module.github_oidc.apply_role_arn>
 ```
 
-In workflows:
+In workflows, every job that assumes a role must declare the environment:
 
 ```yaml
-- uses: aws-actions/configure-aws-credentials@v4
-  with:
-    role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
-    aws-region: eu-west-3
+jobs:
+  apply:
+    environment: prod          # required: sets sub = repo:PodYourLife/k8s-Platform:environment:prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
 ```
 
 ## Files
@@ -65,9 +86,11 @@ In workflows:
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|----------|
 | `cluster_name` | Cluster name — used as IAM role name prefix | `string` | — | yes |
-| `github_org` | GitHub organization (e.g. `PodYourLife`) | `string` | — | yes |
-| `github_repo` | GitHub repository (e.g. `k8s-platform`) | `string` | — | yes |
+| `github_org` | GitHub organization, exact spelling (e.g. `PodYourLife`) | `string` | — | yes |
+| `github_repository` | Trusted repository, case-sensitive (e.g. `k8s-Platform`) | `string` | — | yes |
+| `environment` | `dev`, `staging` or `prod` — the only GitHub Environment trusted | `string` | — | yes |
 | `aws_region` | AWS region — scoped in apply policy resource ARNs | `string` | — | yes |
+| `aws_account_id` | AWS account ID — scoped in the lock table ARN | `string` | — | yes |
 | `state_bucket` | S3 bucket name for Terraform state | `string` | — | yes |
 | `lock_table` | DynamoDB table name for state locking | `string` | — | yes |
 | `tags` | Tags applied to all resources | `map(string)` | `{}` | no |

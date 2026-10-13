@@ -4,33 +4,24 @@ variable "cluster_name" {
 }
 
 variable "github_org" {
-  description = "GitHub organization name (e.g. PodYourLife)"
+  description = "GitHub organization that owns the repository, exactly as GitHub spells it (e.g. PodYourLife)."
   type        = string
+  validation {
+    condition     = can(regex("^[A-Za-z0-9-]+$", var.github_org))
+    error_message = "github_org must be a literal organization name: no wildcard or separator."
+  }
 }
 
-variable "allowed_repos" {
+variable "github_repository" {
   description = <<-EOT
-    Explicit list of GitHub repository names (without org prefix) allowed to assume
-    CI roles. Zero-trust: no wildcards, no org-wide trust.
+    Repository name (without organization prefix) trusted to assume the CI roles.
+    Case-sensitive: it must match the name GitHub puts in the OIDC sub claim
+    exactly (e.g. k8s-Platform). A single repository, no wildcard.
   EOT
-  type        = list(string)
-  validation {
-    condition     = length(var.allowed_repos) > 0
-    error_message = "allowed_repos must contain at least one repository name."
-  }
-  validation {
-    condition     = !contains(var.allowed_repos, "*")
-    error_message = "Wildcards are not allowed in allowed_repos."
-  }
-}
-
-variable "apply_branch_pattern" {
-  description = "Branch pattern allowed to trigger terraform apply. Never use bare '*'."
   type        = string
-  default     = "main"
   validation {
-    condition     = var.apply_branch_pattern != "*"
-    error_message = "apply_branch_pattern must not be a bare wildcard."
+    condition     = can(regex("^[A-Za-z0-9._-]+$", var.github_repository))
+    error_message = "github_repository must be a literal repository name: no wildcard or separator."
   }
 }
 
@@ -50,8 +41,12 @@ variable "lock_table" {
 }
 
 variable "environment" {
-  description = "Environment name (dev, staging, prod) — used to scope OIDC trust subjects"
+  description = "Environment of the roles. The OIDC trust accepts only jobs running under the GitHub Environment of the same name."
   type        = string
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "environment must be one of: dev, staging, prod."
+  }
 }
 
 variable "aws_account_id" {

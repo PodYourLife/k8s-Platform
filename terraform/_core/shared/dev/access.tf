@@ -10,21 +10,20 @@
 
 # ── GitHub Actions OIDC ────────────────────────────────────────────────────────
 # Allows CI to assume AWS roles without storing static credentials in GitHub.
-# plan role  → all branches (PR validation)
-# apply role → env branch only (post-merge)
+# plan and apply roles → jobs running under the GitHub Environment named
+# after this environment only (exact OIDC subject, see the module).
 
 module "github_oidc" {
   source = "../../modules/aws/github-oidc"
 
-  cluster_name         = var.cluster_name
-  github_org           = var.github_org
-  allowed_repos        = var.allowed_repos
-  apply_branch_pattern = var.apply_branch_pattern
-  aws_region           = var.aws_region
-  aws_account_id       = var.aws_account_id
-  environment          = var.environment
-  state_bucket         = "k8s-platform-terraform-state-${var.aws_account_id}"
-  lock_table           = "k8s-platform-terraform-locks"
+  cluster_name      = var.cluster_name
+  github_org        = var.github_org
+  github_repository = var.github_repository
+  aws_region        = var.aws_region
+  aws_account_id    = var.aws_account_id
+  environment       = var.environment
+  state_bucket      = "k8s-platform-terraform-state-${var.aws_account_id}"
+  lock_table        = "k8s-platform-terraform-locks"
 
   tags = {
     Environment = var.environment
