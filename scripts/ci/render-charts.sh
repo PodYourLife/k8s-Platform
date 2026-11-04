@@ -21,7 +21,16 @@ rm -rf "$RENDER_DIR" && mkdir -p "$RENDER_DIR"
 
 for chart_path in "${CHART_PATHS[@]}"; do
   echo "::group::helm lint $chart_path"
-  helm lint --strict "$chart_path"
+  # Charts with inputs that deliberately have no default ship them in
+  # ci/*-values.yaml (Helm convention); lint once per file when present.
+  lint_values_files=("$chart_path"/ci/*-values.yaml)
+  if [[ -e "${lint_values_files[0]}" ]]; then
+    for lint_values_file in "${lint_values_files[@]}"; do
+      helm lint --strict "$chart_path" --values "$lint_values_file"
+    done
+  else
+    helm lint --strict "$chart_path"
+  fi
   echo "::endgroup::"
 done
 
