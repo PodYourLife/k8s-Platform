@@ -7,7 +7,7 @@ metadata:
     policies.kyverno.io/category: Supply Chain Security
     policies.kyverno.io/severity: medium
     policies.kyverno.io/description: >-
-      Restrict container images to ghcr.io/PodYourLife/ and a set of trusted
+      Restrict container images to ghcr.io/podyourlife/ and a set of trusted
       system registries. Runs in Audit mode during initial rollout.
 spec:
   validationFailureAction: Audit
@@ -33,7 +33,7 @@ spec:
       validate:
         message: >-
           Pod images must come from an approved registry. Allowed registries:
-          ghcr.io/PodYourLife/, docker.io/library/, docker.io/hashicorp/,
+          ghcr.io/podyourlife/, docker.io/library/, docker.io/hashicorp/,
           registry.k8s.io/, quay.io/kiwigrid/, quay.io/kubecost/,
           ghcr.io/opencost/, public.ecr.aws/aws-cli/.
         # Canonical Kyverno multi-registry allowlist: foreach over each
@@ -49,10 +49,10 @@ spec:
         foreach:
           - list: "request.object.spec.containers"
             pattern:
-              image: "ghcr.io/PodYourLife/* | docker.io/library/* | docker.io/hashicorp/* | registry.k8s.io/* | quay.io/kiwigrid/* | quay.io/kubecost/* | ghcr.io/opencost/* | public.ecr.aws/aws-cli/*"
+              image: "ghcr.io/podyourlife/* | docker.io/library/* | docker.io/hashicorp/* | registry.k8s.io/* | quay.io/kiwigrid/* | quay.io/kubecost/* | ghcr.io/opencost/* | public.ecr.aws/aws-cli/*"
           - list: "request.object.spec.initContainers"
             pattern:
-              image: "ghcr.io/PodYourLife/* | docker.io/library/* | docker.io/hashicorp/* | registry.k8s.io/* | quay.io/kiwigrid/* | quay.io/kubecost/* | ghcr.io/opencost/* | public.ecr.aws/aws-cli/*"
+              image: "ghcr.io/podyourlife/* | docker.io/library/* | docker.io/hashicorp/* | registry.k8s.io/* | quay.io/kiwigrid/* | quay.io/kubecost/* | ghcr.io/opencost/* | public.ecr.aws/aws-cli/*"
           - list: "request.object.spec.ephemeralContainers"
             pattern:
-              image: "ghcr.io/PodYourLife/* | docker.io/library/* | docker.io/hashicorp/* | registry.k8s.io/* | quay.io/kiwigrid/* | quay.io/kubecost/* | ghcr.io/opencost/* | public.ecr.aws/aws-cli/*"
+              image: "ghcr.io/podyourlife/* | docker.io/library/* | docker.io/hashicorp/* | registry.k8s.io/* | quay.io/kiwigrid/* | quay.io/kubecost/* | ghcr.io/opencost/* | public.ecr.aws/aws-cli/*"
