@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "ml-batch-job.selectorLabels" . | nindent 8 }}
+        {{- include "ml-batch-job.podLabels" . | nindent 8 }}
         ml-platform/job-type: gpu-extract
         ml-platform/run-id: {{ .Values.job.runId | quote }}
       # Istio 1.27+ injects the proxy as a native sidecar (initContainer
