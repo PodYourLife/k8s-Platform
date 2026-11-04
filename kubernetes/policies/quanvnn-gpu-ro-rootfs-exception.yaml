@@ -1,0 +1,31 @@
+# quanvnn-gpu-ro-rootfs-exception.yaml
+# PolicyException: TEMPORARY — the QuanvNN GPU image pip-installs
+# cuquantum-python and cupy-cuda12x into /opt/venv at pod start
+# (scripts/entrypoint-gpu.sh), which needs a writable root filesystem.
+# Scope: require-ro-rootfs only, namespace ml, GPU extract Jobs/Pods only.
+# Removal: delete this file and gpu.containerSecurityContext in
+# quanvnn-dev.yaml once the GPU image installs both packages at build time.
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: quanvnn-gpu-ro-rootfs-exception
+  namespace: ml
+  annotations:
+    platform.podyourlife.io/reason: "GPU image installs cuQuantum/CuPy at runtime into /opt/venv"
+    platform.podyourlife.io/removal-criterion: "QuanvNN GPU image ships cuquantum-python and cupy-cuda12x at build time"
+spec:
+  exceptions:
+    - policyName: require-ro-rootfs
+      ruleNames:
+        - require-read-only-root-filesystem
+        - autogen-require-read-only-root-filesystem
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Job
+          namespaces:
+            - ml
+          names:
+            - "quanvnn-extract-*"

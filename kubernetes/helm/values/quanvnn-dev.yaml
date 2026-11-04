@@ -65,6 +65,16 @@ serviceAccount:
 # STORAGE
 # ─────────────────────────────────────────────────────────────────────────────
 # Four PVCs — sized for CIFAR-10 dataset + quantum feature maps + results.
+# Writable dirs for the read-only root filesystem: /tmp plus the image $HOME
+# (useradd quanvnn in the Dockerfile), where matplotlib/torch/PennyLane cache.
+scratchVolumes:
+  - name: tmp
+    mountPath: /tmp
+    sizeLimit: 2Gi
+  - name: home
+    mountPath: /home/quanvnn
+    sizeLimit: 1Gi
+
 persistentVolumes:
   - name: data
     storage: "20Gi"
@@ -95,6 +105,12 @@ config:
 # ─────────────────────────────────────────────────────────────────────────────
 gpu:
   enabled: true
+  # TEMPORARY: entrypoint-gpu.sh pip-installs cuquantum-python and cupy-cuda12x
+  # into /opt/venv at pod start, so the root filesystem must stay writable.
+  # Covered by PolicyException quanvnn-gpu-ro-rootfs-exception; remove both
+  # once the GPU image installs these packages at build time.
+  containerSecurityContext:
+    readOnlyRootFilesystem: false
   # QuanvNN entrypoint args for quantum convolution extraction step.
   args:
     - "--skip-calibrate"

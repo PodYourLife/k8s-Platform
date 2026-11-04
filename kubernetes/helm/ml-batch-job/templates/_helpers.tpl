@@ -108,3 +108,34 @@ This avoids pulling a second image when the CPU image already embeds the exporte
 {{- printf "%s:%s" .Values.image.cpu.repository .Values.image.cpu.tag }}
 {{- end }}
 {{- end }}
+
+{{/*
+Container securityContext for one Job: the chart-wide containerSecurityContext
+with the per-Job override (gpu/cpu.containerSecurityContext) merged on top.
+deepCopy keeps the shared base untouched across the two Jobs.
+Usage: include "ml-batch-job.containerSecurityContext" (dict "root" $ "override" .Values.gpu.containerSecurityContext)
+*/}}
+{{- define "ml-batch-job.containerSecurityContext" -}}
+{{- $baseContext := deepCopy .root.Values.containerSecurityContext -}}
+{{- toYaml (mergeOverwrite $baseContext (default dict .override)) -}}
+{{- end }}
+
+{{/*
+Writable emptyDir mounts that let containers run with a read-only root
+filesystem (require-ro-rootfs). Prefixed "scratch-" to never collide with
+persistentVolumes names.
+*/}}
+{{- define "ml-batch-job.scratchVolumeMounts" -}}
+{{- range $scratchVolume := .Values.scratchVolumes }}
+- name: scratch-{{ $scratchVolume.name }}
+  mountPath: {{ $scratchVolume.mountPath }}
+{{- end }}
+{{- end }}
+
+{{- define "ml-batch-job.scratchVolumes" -}}
+{{- range $scratchVolume := .Values.scratchVolumes }}
+- name: scratch-{{ $scratchVolume.name }}
+  emptyDir:
+    sizeLimit: {{ $scratchVolume.sizeLimit | default "1Gi" }}
+{{- end }}
+{{- end }}
