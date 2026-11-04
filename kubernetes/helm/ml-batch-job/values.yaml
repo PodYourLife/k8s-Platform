@@ -10,6 +10,10 @@
 nameOverride: ""
 fullnameOverride: ""
 
+# Environment name stamped as the `env` pod label (required by the
+# require-pod-labels Kyverno policy). No default: each values-{env} file sets it.
+# environment: dev
+
 # Kubernetes namespace where all workload resources are deployed.
 # Must be created as a platform prerequisite — this chart does NOT create namespaces.
 namespace:
@@ -84,6 +88,14 @@ serviceAccount:
 #                ReadWriteMany for multi-node (requires EFS or similar)
 #   mountPath  : container mount path. Defaults to /<name> when omitted.
 #   readOnly   : mount as read-only. Defaults to false when omitted.
+# emptyDir volumes mounted read-write in every container so the root
+# filesystem can stay read-only. Add the image's $HOME when its libraries
+# write caches there (matplotlib, torch, PennyLane).
+scratchVolumes:
+  - name: tmp
+    mountPath: /tmp
+    sizeLimit: 1Gi
+
 persistentVolumes:
   - name: data
     storage: "10Gi"
@@ -105,6 +117,8 @@ config: {}
 # The GPU nodegroup scales to zero when idle — Cluster Autoscaler provisions
 # a node on Job creation and releases it after completion.
 gpu:
+  # Merged over containerSecurityContext for the GPU Job only.
+  containerSecurityContext: {}
   enabled: false
 
   # CLI arguments passed to the GPU container entrypoint.
@@ -139,6 +153,8 @@ gpu:
 # Always enabled. Runs the main training/analysis workload on CPU nodes.
 # The metrics sidecar (section below) is injected into this pod when enabled.
 cpu:
+  # Merged over containerSecurityContext for the CPU Job only.
+  containerSecurityContext: {}
   # CLI arguments passed to the CPU container entrypoint.
   args: []
 
@@ -212,6 +228,6 @@ containerSecurityContext:
   capabilities:
     drop:
       - ALL
-  readOnlyRootFilesystem: false
+  readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1000

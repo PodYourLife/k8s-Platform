@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "ml-batch-job.selectorLabels" . | nindent 8 }}
+        {{- include "ml-batch-job.podLabels" . | nindent 8 }}
         ml-platform/job-type: gpu-extract
         ml-platform/run-id: {{ .Values.job.runId | quote }}
       # Istio 1.27+ injects the proxy as a native sidecar (initContainer
@@ -42,7 +42,7 @@ spec:
           image: "{{ required "image.gpu.repository must be set" .Values.image.gpu.repository }}:{{ .Values.image.gpu.tag }}"
           imagePullPolicy: {{ .Values.image.gpu.pullPolicy }}
           securityContext:
-            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+            {{- include "ml-batch-job.containerSecurityContext" (dict "root" $ "override" .Values.gpu.containerSecurityContext) | nindent 12 }}
           {{- if .Values.gpu.args }}
           args:
             {{- toYaml .Values.gpu.args | nindent 12 }}
@@ -59,10 +59,12 @@ spec:
               mountPath: {{ .mountPath | default (printf "/%s" .name) }}
               readOnly: {{ .readOnly | default false }}
             {{- end }}
+            {{- include "ml-batch-job.scratchVolumeMounts" . | nindent 12 }}
       volumes:
         {{- range .Values.persistentVolumes }}
         - name: {{ .name }}
           persistentVolumeClaim:
             claimName: {{ include "ml-batch-job.fullname" $ }}-{{ .name }}
         {{- end }}
+        {{- include "ml-batch-job.scratchVolumes" . | nindent 8 }}
 {{- end }}
