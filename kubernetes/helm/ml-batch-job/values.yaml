@@ -10,6 +10,10 @@
 nameOverride: ""
 fullnameOverride: ""
 
+# Environment name stamped as the `env` pod label (required by the
+# require-pod-labels Kyverno policy). No default: each values-{env} file sets it.
+# environment: dev
+
 # Kubernetes namespace where all workload resources are deployed.
 # Must be created as a platform prerequisite — this chart does NOT create namespaces.
 namespace:

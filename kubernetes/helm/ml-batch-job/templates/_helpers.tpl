@@ -58,6 +58,17 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Pod template labels — selector labels plus the labels required by the
+require-pod-labels Kyverno policy (ADR conflict C08). Kept separate from
+selectorLabels so that Job selectors stay stable across upgrades.
+*/}}
+{{- define "ml-batch-job.podLabels" -}}
+{{ include "ml-batch-job.selectorLabels" . }}
+app.kubernetes.io/part-of: ml-platform
+env: {{ required "environment is required (e.g. dev)" .Values.environment | quote }}
+{{- end }}
+
+{{/*
 ServiceAccount name resolution.
 Uses explicit name if provided, otherwise <fullname>-sa.
 The -sa suffix makes the resource type explicit in kubectl output.
