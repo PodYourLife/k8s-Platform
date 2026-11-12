@@ -132,3 +132,24 @@ kubeScheduler:
   enabled: true
 kubeProxy:
   enabled: true
+
+# ADR-0023 D4: Applications converge by unlimited retry, so a dependency that
+# never appears must surface as an alert instead of an endless retry loop.
+# argocd_app_info is exposed by the argocd-metrics ServiceMonitor.
+additionalPrometheusRulesMap:
+  argocd-convergence:
+    groups:
+      - name: argocd-convergence
+        rules:
+          - alert: ArgoCDApplicationNotConverged
+            expr: |
+              max by (name, project, sync_status, health_status) (
+                argocd_app_info{sync_status="OutOfSync"}
+                or argocd_app_info{health_status="Degraded"}
+              ) == 1
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Argo CD Application {{ $labels.name }} has not converged for 15 minutes"
+              description: "sync={{ $labels.sync_status }} health={{ $labels.health_status }}. A dependency is missing or a resource is stuck (ADR-0023 D4/D5)."
