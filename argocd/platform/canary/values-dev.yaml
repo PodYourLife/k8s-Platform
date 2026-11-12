@@ -1,0 +1,5 @@
+canary:
+  region: eu-west-3
+  bucket: canary-status-351457945908
+  serviceAccount:
+    name: default

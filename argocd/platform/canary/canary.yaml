@@ -1,0 +1,32 @@
+# Canary — status page for platform smoke tests.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: canary
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform.podyourlife.io/managed: "true"
+  template:
+    metadata:
+      name: 'canary-{{index .metadata.labels "platform.podyourlife.io/environment"}}'
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/PodYourLife/k8s-platform.git
+        targetRevision: main
+        path: kubernetes/helm/sample-app
+        helm:
+          ignoreMissingValueFiles: true
+          valueFiles:
+            - ../../../argocd/platform/canary/values-dev.yaml
+      destination:
+        server: '{{.server}}'
+        namespace: canary
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
