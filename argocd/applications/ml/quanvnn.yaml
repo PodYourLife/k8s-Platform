@@ -54,6 +54,8 @@ spec:
       - CreateNamespace=false
       - PrunePropagationPolicy=foreground
       - PruneLast=true
+    # Deliberate exception to ADR-0023 D2 (unlimited retry): this Application
+    # runs ML batch Jobs, and retrying a failed training run forever wastes GPU time.
     retry:
       limit: 3
       backoff:
