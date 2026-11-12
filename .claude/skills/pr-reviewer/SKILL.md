@@ -53,7 +53,7 @@ Each finding must cite the ADR or the security rule it breaks.
 - No hardcoded region, account ID or cloud name in modules, charts or values files.
 - ApplicationSets using the cluster generator: `goTemplateOptions: ["missingkey=error"]`,
   `destination.server: '{{.server}}'`, contract keys under `platform.podyourlife.io/`.
-- `ignoreMissingValueFiles` is forbidden.
+- `ignoreMissingValueFiles` is forbidden (ADR-0001 D3).
 
 **ArgoCD (ADR-0002, 0003, 0004)**
 - Every new Application or ApplicationSet carries `argocd.argoproj.io/sync-wave`,
@@ -101,10 +101,15 @@ in the summary only, never as inline comments.
 
 ## Posting
 
+Every comment and the verdict summary are written in English, whatever the
+language of the PR, the ADRs or the code comments.
+
 - One inline comment per blocking finding with
   `mcp__github_inline_comment__create_inline_comment` and `confirmed: true`.
   Format: `**[ADR-00XX]** what is wrong — what to do instead.`
-- One summary comment with `gh pr comment $ARGUMENTS --body "..."`, in French:
+- One summary comment with
+  `gh pr comment $ARGUMENTS --edit-last --create-if-none --body "..."`, in English,
+  so each new review replaces the previous summary instead of stacking:
   verdict, blocking findings count, non-blocking suggestions, ADRs consulted.
 - If there is nothing to report, post a one-line summary only.
 
@@ -113,7 +118,7 @@ in the summary only, never as inline comments.
 Return the structured output requested by the workflow:
 - `verdict`: `approve` when there are zero blocking findings, `request_changes` otherwise.
 - `blocking_findings`: the number of blocking findings posted.
-- `summary`: one sentence, in French.
+- `summary`: one sentence, in English.
 
 Never return `approve` to be helpful. When the diff cannot be read or an ADR is
 missing, return `request_changes` and explain why in the summary.
