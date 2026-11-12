@@ -45,8 +45,10 @@ any of these is true:
 - Never add a `__*__` placeholder token. Never hardcode a region, account ID or
   cloud name. Environment variance goes through `values-{env}.yaml` and
   `values-{cloud}.yaml` (ADR-0001 D1, D3).
-- New ArgoCD Applications and ApplicationSets carry `argocd.argoproj.io/sync-wave`
-  (ADR-0003), and comments stating a wave must match the annotation.
+- New ArgoCD Applications and ApplicationSets follow ADR-0023: no
+  `argocd.argoproj.io/sync-wave`, an explicit `syncPolicy.retry`, and
+  `SkipDryRunOnMissingResource=true` when they use a CRD owned by another Application.
+  Comments describe real dependencies, never wave numbers.
 - Keep every file you write under 200 lines.
 - Comments in English, explaining why rather than what.
 
