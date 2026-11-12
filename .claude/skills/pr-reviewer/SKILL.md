@@ -59,10 +59,13 @@ Each finding must cite the ADR or the security rule it breaks.
   `destination.server: '{{.server}}'`, contract keys under `platform.podyourlife.io/`.
 - `ignoreMissingValueFiles` is forbidden (ADR-0001 D3).
 
-**ArgoCD (ADR-0002, 0003, 0004)**
-- Every new Application or ApplicationSet carries `argocd.argoproj.io/sync-wave`,
-  consistent with the ordering: namespaces `-3`, cluster-scoped resources and CRDs
-  before their consumers.
+**ArgoCD (ADR-0002, 0004, 0023)**
+- No `argocd.argoproj.io/sync-wave` on an Application, an ApplicationSet, or an
+  ApplicationSet `template.metadata` (ADR-0023 D1). Waves stay allowed on resources
+  inside one Application.
+- Every Application and ApplicationSet template sets `syncPolicy.retry` (ADR-0023 D2).
+- Applications whose resources use a CRD owned by another Application set
+  `SkipDryRunOnMissingResource=true` (ADR-0023 D3).
 - `CreateNamespace=false` except in the `namespaces` ApplicationSet.
 - The `ml` AppProject keeps `clusterResourceWhitelist: []`.
 

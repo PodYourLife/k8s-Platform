@@ -15,7 +15,7 @@ Les identifiants de travail A01 à A20 correspondent aux ADR-0002 à ADR-0021.
 | ID | Titre | Date / commit | Décision | Sources | Note |
 |---|---|---|---|---|---|
 | [ADR-0002](../0002-namespace-ownership.md) | Propriété des namespaces | 2026-03-18 k8s:385911b | AppSet `namespaces` wave -3, `CreateNamespace=false` ailleurs | ARCH, RC, KC | |
-| [ADR-0003](../0003-sync-wave-ordering.md) | Ordonnancement par sync-waves | 2026-03-01 k8s:fd3b16a | Ordre déterministe -3→16 | ARCH, CI, KC | table canonique à arbitrer (C02), révision GW |
+| [ADR-0003](../0003-sync-wave-ordering.md) | Ordonnancement par sync-waves | 2026-03-01 k8s:fd3b16a | Ordre déterministe -3→16 | ARCH, CI, KC | remplacé par ADR-0023 (vagues sans effet entre Applications) |
 | [ADR-0004](../0004-appproject-split.md) | Découpage des AppProjects | 2026-03-01 k8s:d568d63 (ml 2026-03-19 6ea216a) | platform / applications / ml, ml sans ressources cluster | ARCH, RM, KC | |
 | [ADR-0005](../0005-eso-only-secrets.md) | ESO seul fournisseur de secrets | 2026-03-02 k8s:e23b947 | Ni Sealed Secrets ni Secret dans Git ; nom de store stable | ARCH, RC, CI, SEC, ESO | nom neutre à arbitrer (C03) |
 | [ADR-0006](../0006-terraform-layering.md) | Terraform en couches, outputs = API publique | 2026-03-03 k8s:324957b | `_core` → `domains` via remote_state, apply en étapes | ARCH, RC, CI, TF | D3 ajoute `modules/{aws,oci,kind}` |
