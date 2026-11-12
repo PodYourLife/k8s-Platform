@@ -27,7 +27,9 @@ jobs:
             echo "❌ Env-specific values found on main-bound files:"
             echo "$VIOLATIONS"
             echo ""
-            echo "Use __PLACEHOLDER__ syntax instead."
+            echo "Move env-specific values to values-<env>.yaml or values-<cloud>.yaml,"
+            echo "or read them from the cluster contract (ADR-0001 D1, D3)."
+            echo "Do not add new __PLACEHOLDER__ tokens: they are being removed (ADR-0001)."
             exit 1
           fi
           echo "✅ No env-specific values found"
