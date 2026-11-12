@@ -1,10 +1,8 @@
 # Cluster-scoped PriorityClasses for GPU workloads.
 #
-# Wave -2 — must be present before any pod that references them is
-# scheduled. The actual GPU workloads run much later (wave 9+ for
-# monitoring stack, then on-demand ML jobs), so wave -2 is comfortably
-# early. This wave parallels istio-base (CRDs) — no ordering conflict
-# since both are cluster-scoped resources with no inter-dependency.
+# A pod referencing a missing PriorityClass is rejected at admission, so the
+# consuming Job fails to apply and converges by retry once this ApplicationSet
+# has synced (ADR-0023). GPU Jobs are on-demand, long after bootstrap.
 #
 # These resources are platform-owned (cluster-scoped) and therefore
 # cannot live in the chart-owned ml AppProject (whose
@@ -29,8 +27,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "-2"
     spec:
       project: platform
       source:
@@ -49,6 +45,13 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - CreateNamespace=false
           - ServerSideApply=true

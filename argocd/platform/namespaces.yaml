@@ -2,9 +2,10 @@
 # Namespaces include PodSecurity labels and Istio injection labels
 # Any namespace change must go through this ApplicationSet — no manual kubectl create namespace
 #
-# Wave -3 — must sync before everything else:
-# monitoring-namespace carries istio-injection: disabled
-# If prometheus syncs before this, Jobs will get sidecars and block indefinitely
+# Every other Application uses CreateNamespace=false (ADR-0002): its sync fails
+# until the namespace exists, then converges by retry (ADR-0023). Namespaces are
+# therefore always created with their labels (e.g. monitoring carries
+# istio-injection: disabled), never implicitly without them.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -26,8 +27,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "-3"
     spec:
       project: platform
       ignoreDifferences:
@@ -46,5 +45,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

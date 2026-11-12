@@ -4,9 +4,8 @@
 # To add a dashboard: add a JSON file in the relevant subfolder and update the ConfigMap
 # Folder structure is driven by the annotation k8s-sidecar-target-directory
 #
-# Wave 8 — last in the monitoring chain:
-# Grafana sidecar must be running before dashboards can be loaded
-# datasources (wave 8) must exist so dashboards have a working datasource on first load
+# Depends on: Grafana sidecar (prometheus Application). The sidecar watches
+# ConfigMaps continuously, so dashboards applied first are loaded when it starts.
 # ServerSideApply required — dashboard ConfigMaps exceed the 262144-byte annotation limit
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -29,8 +28,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "10"
     spec:
       project: platform
       source:
@@ -44,5 +41,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

@@ -3,8 +3,7 @@
 # ServiceMonitors live in the argocd namespace but are scraped by Prometheus
 # in the monitoring namespace (cross-namespace scraping enabled via namespaceSelector: any: true)
 #
-# Wave 6 — after prometheus (wave 4):
-# ServiceMonitor CRD must exist before applying these resources
+# Depends on: ServiceMonitor CRD (prometheus Application). Converges by retry once it exists (ADR-0023).
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -26,8 +25,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "11"
     spec:
       project: platform
       source:
@@ -41,5 +38,13 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true  # CRD owned by another Application (ADR-0023 D3)

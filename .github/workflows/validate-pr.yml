@@ -137,27 +137,26 @@ jobs:
           || true
           echo "✅ YAML lint complete"
 
-  # ── Règle 6 : ArgoCD sync-wave documenté ──────────────────────────────────
-  check-syncwave:
-    name: Sync wave annotation present on ApplicationSets
+  # ── Rule 6: no sync-wave between Applications (ADR-0023 D1) ────────────────
+  check-no-app-syncwave:
+    name: No sync-wave on Applications or ApplicationSets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check sync-wave annotations
+      - name: Check that Applications are not ordered by sync-waves
         run: |
-          VIOLATIONS=""
-          for file in $(find argocd/platform -name "*.yaml" -not -name "*.md"); do
-            if grep -q "kind: ApplicationSet\|kind: Application" "$file"; then
-              if ! grep -q "sync-wave" "$file"; then
-                VIOLATIONS="$VIOLATIONS\n  $file"
-              fi
-            fi
-          done
+          # Waves only order resources inside one sync: on Applications generated
+          # by ApplicationSets they order nothing. They stay allowed inside an
+          # Application (kubernetes/), never under argocd/.
+          VIOLATIONS=$(grep -rln "argocd.argoproj.io/sync-wave" \
+            argocd/ docs/templates/local/vault/argocd/ \
+            --include="*.yaml" \
+            2>/dev/null || true)
 
           if [ -n "$VIOLATIONS" ]; then
-            echo "❌ Missing sync-wave annotation:"
-            echo -e "$VIOLATIONS"
+            echo "❌ sync-wave annotation found on Applications/ApplicationSets (ADR-0023 D1):"
+            echo "$VIOLATIONS"
             exit 1
           fi
-          echo "✅ All ApplicationSets have sync-wave annotations"
+          echo "✅ No sync-wave on Applications or ApplicationSets"

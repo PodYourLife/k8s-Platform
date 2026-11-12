@@ -9,9 +9,6 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    # CNI must be ready before istiod starts injecting sidecars
-    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: platform
 
@@ -30,5 +27,12 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    retry:
+      limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+      refresh: true
     syncOptions:
       - ServerSideApply=true

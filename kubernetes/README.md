@@ -34,7 +34,7 @@ kubernetes/
 
 Namespaces are **platform infrastructure** — never created by application charts or manually.
 All namespace declarations live in `kubernetes/namespaces/` and are managed by the
-`namespaces` ApplicationSet (wave -3).
+`namespaces` ApplicationSet.
 
 To add a new namespace:
 1. Create `kubernetes/namespaces/<name>-namespace.yaml` following the existing pattern

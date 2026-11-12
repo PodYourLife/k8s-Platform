@@ -3,8 +3,8 @@
 # Each ConfigMap in kubernetes/manifests/monitoring/datasources/ declares
 # a single datasource — the k8s-sidecar hot-loads them into Grafana without restart.
 #
-# Wave 7 — after prometheus (wave 4): Grafana must be Running before
-# the sidecar can reload datasources.
+# Depends on: Grafana sidecar (prometheus Application). The sidecar loads
+# existing ConfigMaps when it starts, so no ordering is required.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -26,8 +26,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "9"
     spec:
       project: platform
       source:
@@ -41,5 +39,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

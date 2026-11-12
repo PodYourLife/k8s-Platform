@@ -17,13 +17,13 @@ argocd/
     applications.yaml    ← AppProject: product apps (development, staging, production)
     ml.yaml              ← AppProject: ML batch workloads (Jobs, PVCs, IRSA)
   platform/
-    namespaces.yaml      ← wave -3 — all cluster namespaces
-    external-secrets/    ← wave -2 — ESO operator + ClusterSecretStore
-    istio/               ← waves -1 to 1 — CNI, istiod, gateway
-    kyverno/             ← wave 2 — admission policies
-    monitoring/          ← waves 4-8 — prometheus, loki, promtail, grafana, opencost
-    argocd/              ← wave 6 — ArgoCD self-monitoring ServiceMonitors
-    development/         ← wave 6 — development namespace ServiceMonitors
+    namespaces.yaml      ← all cluster namespaces
+    external-secrets/    ← ESO operator + ClusterSecretStore
+    istio/               ← CNI, istiod, gateway
+    kyverno/             ← admission policies
+    monitoring/          ← prometheus, loki, promtail, grafana, opencost
+    argocd/              ← ArgoCD self-monitoring ServiceMonitors
+    development/         ← development namespace ServiceMonitors
   applications/
     ml/
       quanvnn.yaml       ← QuanvNN ML batch pipeline (dev)
@@ -43,12 +43,21 @@ Three AppProjects define RBAC boundaries and allowed resource types:
 
 ---
 
-## Sync waves
+## Dependencies between Applications
 
-Resources are applied in strict wave order. Each wave waits for the previous to be healthy.
+Applications are not ordered by sync-waves ([ADR-0023](../docs/adr/0023-inter-application-dependencies.md)).
+Sync-waves only order resources inside one Application, and ApplicationSet-generated
+Applications are created all at once. Each Application converges on its own:
 
-| Wave | ApplicationSet | Reason |
-|------|---------------|--------|
+- A missing dependency (namespace, CRD, webhook) makes the sync fail; the explicit
+  `syncPolicy.retry` in every template retries until it exists.
+- Applications whose resources use a CRD owned by another Application set
+  `SkipDryRunOnMissingResource=true`.
+- An Application `OutOfSync` or `Degraded` for more than 15 minutes raises an alert.
+
+`argocd.argoproj.io/sync-wave` remains allowed on resources inside one Application.
+
+------|---------------|--------|
 | -3 | namespaces | Must exist before any workload |
 | -2 | external-secrets | ESO must be ready before secrets are synced |
 | -1 | istio-base, istio-cni | CRDs and CNI before istiod |
@@ -134,7 +143,7 @@ git push
 
 ## Observability
 
-ArgoCD exposes Prometheus metrics scraped by the `argocd-servicemonitors` ApplicationSet (wave 6).
+ArgoCD exposes Prometheus metrics scraped by the `argocd-servicemonitors` ApplicationSet.
 The ArgoCD dashboard is available in Grafana under the `Platform` folder.
 
 ```bash
