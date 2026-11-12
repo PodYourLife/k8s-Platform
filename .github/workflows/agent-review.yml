@@ -115,7 +115,18 @@ jobs:
           persist-credentials: false
 
       # The action restores .claude/ and CLAUDE.md from the base branch, so a PR
-      # cannot rewrite the reviewer skill it is judged by.
+      # cannot rewrite the reviewer skill it is judged by. Without the skill on
+      # the base branch Claude reviews with no rules: fail closed instead.
+      - name: Require the reviewer skill on the base branch
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          if ! git cat-file -e "FETCH_HEAD:.claude/skills/pr-reviewer/SKILL.md"; then
+            echo "::error::.claude/skills/pr-reviewer/SKILL.md is missing on '$BASE_REF'. The review cannot run without it."
+            exit 1
+          fi
+
       - name: Review
         id: review
         uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
