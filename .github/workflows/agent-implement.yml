@@ -65,7 +65,7 @@ jobs:
           claude_args: |
             --max-turns 60
             --allowedTools "Bash(terraform fmt *),Bash(terraform validate *),Bash(terraform -chdir=*)"
-            --disallowedTools "Bash(terraform*apply*),Bash(terraform*plan*),Bash(terraform*destroy*),Bash(terraform*import*),Bash(terraform*state*),Bash(terraform*taint*),Bash(terraform*console*),Bash(terraform*workspace*),Bash(terraform*login*)"
+            --disallowedTools "Bash(terraform*apply*),Bash(terraform*plan*),Bash(terraform*destroy*),Bash(terraform*import*),Bash(terraform*state*),Bash(terraform*taint*),Bash(terraform*console*),Bash(terraform*workspace*),Bash(terraform*login*),Bash(terraform*refresh*),Bash(terraform*output*),Bash(terraform*force-unlock*),Bash(terraform*show*)"
             --append-system-prompt "Before anything else, read .claude/skills/implementer/SKILL.md and follow it exactly. Write every comment and commit message in English."
 
       - name: Remove the agent:implement label
