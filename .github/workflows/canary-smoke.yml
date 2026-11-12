@@ -1,0 +1,14 @@
+# Manual smoke test of the canary status page.
+name: Canary smoke
+
+on:
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: curl -fsS "https://canary.example.invalid/healthz"
