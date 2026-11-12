@@ -1,7 +1,8 @@
 ---
 adr: 0003
 title: "Ordonnancement du déploiement par sync-waves"
-status: Accepté
+status: Remplacé
+superseded_by: [ADR-0023]
 date: 2026-03-01
 recorded: 2026-10-13
 scope: [k8s-platform]
@@ -11,7 +12,7 @@ related: [ADR-0001]
 
 # ADR-0003 — Ordonnancement du déploiement par sync-waves
 
-- **Statut** : Accepté (rédigé rétroactivement le 2026-10-13)
+- **Statut** : Remplacé par [ADR-0023](0023-inter-application-dependencies.md) le 2026-11-12 (rédigé rétroactivement le 2026-10-13)
 - **Date d'origine** : 2026-03-01
 - **Périmètre** : k8s-platform
 
