@@ -108,7 +108,8 @@ Tout nouveau cas de ce type est documenté ici, avec sa correction structurelle.
   - retrait des annotations `sync-wave` des Applications et ApplicationSets, ajout de D2 et D3 aux templates (phase C1, avec la migration vers le générateur *cluster*) ;
   - suppression de la règle 6 de `validate-pr.yml` (présence de `sync-wave`), remplacée par la règle inverse ;
   - mise à jour des skills `pr-reviewer` et `implementer`, qui imposent aujourd'hui l'annotation (ADR-0003) ;
-  - règle d'alerte de D4 dans la stack monitoring ; sortie non convergée dans `platform-bot status`.
+  - règle d'alerte de D4 dans la stack monitoring, livrée **dans la même PR** que D2 : un réessai illimité sans alerte masquerait une Application bloquée ;
+  - sortie non convergée dans `platform-bot status`.
 
 ## Statut au regard de l'ADR-0001
 
