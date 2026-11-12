@@ -1,5 +1,4 @@
-# Wave 6 — after prometheus (wave 4):
-# ServiceMonitor CRD must exist before applying these resources
+# Depends on: ServiceMonitor CRD (prometheus Application). Converges by retry once it exists (ADR-0023).
 
 # This ApplicationSet is intentionally minimal in the template — it covers
 # the sample-app fixture used to validate the infra during bootstrap.
@@ -8,8 +7,6 @@
 # ServiceMonitor manifest in kubernetes/manifests/<namespace>/servicemonitors/
 # and commits it to the target repo. ArgoCD prune: true will pick it up
 # automatically on the next sync — no changes needed here.
-#
-# Wave 6 — ServiceMonitor CRD must exist (prometheus wave 4) before this syncs
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -31,8 +28,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "11"
     spec:
       project: platform
       source:
@@ -46,5 +41,13 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true  # CRD owned by another Application (ADR-0023 D3)

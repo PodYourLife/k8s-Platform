@@ -6,9 +6,10 @@
 #   prometheus-values.yaml → collection (Prometheus, Alertmanager, exporters, alert rules)
 #   grafana-values.yaml    → visualisation (Grafana subchart, sidecar, persistence)
 #
-# Wave 4 — after namespaces (wave -3) and Istio (waves 0-3).
-# The monitoring namespace must have istio-injection: disabled before this sync —
-# admission webhook Jobs cannot terminate cleanly with an Istio sidecar running.
+# Depends on: the monitoring namespace (namespaces ApplicationSet), created with
+# istio-injection: disabled. Admission webhook Jobs cannot terminate cleanly with
+# an Istio sidecar; CreateNamespace=false guarantees the namespace carries that
+# label before any Job is created (ADR-0023).
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -30,8 +31,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "8"
     spec:
       project: platform
       sources:
@@ -53,5 +52,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

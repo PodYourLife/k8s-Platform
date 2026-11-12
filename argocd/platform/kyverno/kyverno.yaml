@@ -1,5 +1,6 @@
 # Kyverno policy engine — validates and mutates resources against ClusterPolicies
-# Wave -1 — after namespaces (wave -3), before application workloads
+# Depends on: the kyverno namespace. Policies (kyverno-policies) converge by retry
+# once its CRDs exist (ADR-0023).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,8 +8,6 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "12"
 spec:
   project: platform
   source:
@@ -45,5 +44,12 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    retry:
+      limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+      refresh: true
     syncOptions:
       - ServerSideApply=true

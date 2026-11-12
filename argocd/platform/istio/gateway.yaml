@@ -1,11 +1,14 @@
 # Installs the Istio ingress gateway
 # Entry point for all external traffic into the mesh
-# Depends on: istiod (wave -1) + istio-cni (wave 0-1)
+# Depends on: istiod (injection webhook) + istio-cni
 #
 # Deployed in istio-ingress namespace (istio-injection: enabled).
 # The gateway pod uses image: auto — substituted at creation time
 # by the istio-sidecar-injector MutatingAdmissionWebhook.
-# Wave 2 guarantees istiod is healthy and the webhook is registered.
+# If gateway pods are created before the webhook exists, they stay in
+# ImagePullBackOff: retry cannot fix an applied object. Known case ADR-0023 D5,
+# removed by the Gateway API migration (ADR-0001 A1). Until then: alert (D4)
+# then `kubectl -n istio-ingress rollout restart deployment`.
 #
 # Default service type: LoadBalancer
 # EKS: cloud NLB provisioned automatically via AWS Load Balancer Controller
@@ -17,8 +20,6 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: platform
 
@@ -64,5 +65,12 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    retry:
+      limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+      refresh: true
     syncOptions:
       - ServerSideApply=true

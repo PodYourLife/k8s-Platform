@@ -3,9 +3,8 @@
 # Prometheus discovers these via its serviceMonitorNamespaceSelector: any: true config
 # label release: prometheus must match the Prometheus operator selector
 #
-# Wave 6 — after prometheus + loki + promtail (wave 4-5):
-# ServiceMonitor CRD (monitoring.coreos.com) must exist before applying these resources
-# Loki and Promtail pods must exist for ServiceMonitors to resolve their selectors
+# Depends on: ServiceMonitor/PodMonitor CRDs (prometheus Application). Converges by retry once it exists (ADR-0023).
+# Selectors resolve dynamically: targets appear when Loki and Promtail pods run.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -27,8 +26,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "11"
     spec:
       project: platform
       source:
@@ -42,5 +39,13 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true  # CRD owned by another Application (ADR-0023 D3)

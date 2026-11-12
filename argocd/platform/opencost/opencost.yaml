@@ -1,7 +1,7 @@
 # OpenCost — CNCF open source Kubernetes cost monitoring
-# Namespace: finops (created by argocd/platform/namespaces.yaml, wave -3)
-# Requires: Prometheus (wave 4), namespaces (wave -3)
-# Wave 7 — after ServiceMonitors (wave 6) to avoid CRD race on ServiceMonitor creation
+# Namespace: finops (created by argocd/platform/namespaces.yaml)
+# Depends on: Prometheus (query endpoint) and the finops namespace.
+# Converges by retry once they exist (ADR-0023).
 #
 # OpenCost scrapes Prometheus for resource usage and exposes cost metrics
 # per namespace, deployment, pod and container. GPU node costs are tracked
@@ -29,8 +29,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "14"
     spec:
       project: platform
       sources:
@@ -49,11 +47,18 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         # finops is the business domain namespace for cost monitoring tooling.
-        # Created by the namespaces ApplicationSet (wave -3) — no CreateNamespace needed.
+        # Created by the namespaces ApplicationSet — no CreateNamespace needed.
         namespace: finops
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

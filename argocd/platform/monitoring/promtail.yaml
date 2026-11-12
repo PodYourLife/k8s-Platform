@@ -2,7 +2,7 @@
 # Runs on every node, tails /var/log/pods and forwards to Loki
 # Values file: kubernetes/helm/monitoring/promtail-values.yaml
 #
-# Wave 5 — after prometheus (wave 4), same wave as loki
+# Depends on: Loki to receive logs. Promtail buffers and retries pushes on its own.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -24,8 +24,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "6"
     spec:
       project: platform
       sources:
@@ -46,5 +44,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

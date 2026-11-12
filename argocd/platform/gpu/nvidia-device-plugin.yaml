@@ -1,6 +1,6 @@
 # NVIDIA k8s-device-plugin — exposes GPUs to the kubelet as nvidia.com/gpu
-# Wave 2 — runs after istio-base/istiod/istio-cni (waves -2 to 0) so that
-# strict mTLS doesn't disrupt the device plugin's gRPC socket negotiation.
+# No mesh dependency: the plugin talks to the kubelet over a local Unix socket,
+# and platform operators are not injected (ADR-0009).
 # Without this DaemonSet, GPU Jobs stay Pending forever even after Cluster
 # Autoscaler provisions a g4dn node — kubelet never advertises the resource.
 #
@@ -27,8 +27,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "2"
     spec:
       project: platform
       source:
@@ -61,6 +59,13 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - CreateNamespace=false
           - ServerSideApply=true

@@ -1,9 +1,8 @@
 # cert-manager — TLS certificate lifecycle management
 # Automates issuance and renewal of TLS certificates for ingress endpoints.
 #
-# Wave 15 — cert-manager has no dependency on the monitoring or policy stack.
-# Certificates are only consumed later when Istio Gateway routes are configured.
-# Installing late avoids contention during the critical Istio bootstrap sequence.
+# No dependency on the monitoring or policy stack. Certificates are consumed
+# by Istio Gateway routes, which converge by retry once issuers exist (ADR-0023).
 #
 # CRDs are installed via crds.enabled=true (recommended since cert-manager 1.15+).
 # The installCRDs value is deprecated — do not use.
@@ -29,8 +28,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "15"
     spec:
       project: platform
       source:
@@ -87,5 +84,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

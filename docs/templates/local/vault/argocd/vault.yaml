@@ -4,7 +4,7 @@
 # Data is lost on pod restart — this is intentional for dev.
 # Secrets are re-seeded by the bootstrap script (docs/local-development.md).
 #
-# Wave 17 — after cert-manager (wave 15-16), before ESO ClusterSecretStore.
+# The ESO ClusterSecretStore converges by retry once Vault is running (ADR-0023).
 # On EKS environments, this ApplicationSet is not present — ESO connects
 # directly to AWS Secrets Manager via IRSA.
 #
@@ -29,8 +29,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        argocd.argoproj.io/sync-wave: "-2"
     spec:
       project: platform
       source:
@@ -72,5 +70,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true

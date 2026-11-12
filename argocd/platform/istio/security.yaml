@@ -22,9 +22,6 @@ spec:
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
-      annotations:
-        # Security policies applied after the mesh is up
-        argocd.argoproj.io/sync-wave: "3"
     spec:
       project: platform
       source:
@@ -38,5 +35,13 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
         syncOptions:
           - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true  # CRD owned by another Application (ADR-0023 D3)

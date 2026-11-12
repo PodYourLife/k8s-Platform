@@ -14,8 +14,6 @@ kind: Application
 metadata:
   name: quanvnn-__ENV__
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "9"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   labels:

@@ -1,10 +1,9 @@
 # Installs the Istio control plane (istiod)
 # istiod manages sidecar injection, mTLS certificates, and traffic policy
-# Depends on: istio-base (CRDs) at wave -2
+# Depends on: istio-base (CRDs). Converges by retry once they exist (ADR-0023).
 #
-# Wave -1: istiod must be healthy before CNI (wave 0-1) and gateway (wave 2).
 # The MutatingAdmissionWebhook registered by istiod is required for
-# gateway pod injection (image: auto substitution).
+# gateway pod injection (image: auto substitution): see ADR-0023 D5.
 #
 # Version: __ISTIO_VERSION__ — resolved by platform-bot env hydrate from platform.yaml
 apiVersion: argoproj.io/v1alpha1
@@ -14,8 +13,6 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
 spec:
   project: platform
 
@@ -75,5 +72,12 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    retry:
+      limit: -1  # retry until dependencies exist; non-convergence is alerted (ADR-0023 D4)
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+      refresh: true
     syncOptions:
       - ServerSideApply=true
