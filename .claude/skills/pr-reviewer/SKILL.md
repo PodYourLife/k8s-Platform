@@ -107,7 +107,9 @@ language of the PR, the ADRs or the code comments.
 - One inline comment per blocking finding with
   `mcp__github_inline_comment__create_inline_comment` and `confirmed: true`.
   Format: `**[ADR-00XX]** what is wrong — what to do instead.`
-- One summary comment with `gh pr comment $ARGUMENTS --body "..."`, in English:
+- One summary comment with
+  `gh pr comment $ARGUMENTS --edit-last --create-if-none --body "..."`, in English,
+  so each new review replaces the previous summary instead of stacking:
   verdict, blocking findings count, non-blocking suggestions, ADRs consulted.
 - If there is nothing to report, post a one-line summary only.
 
