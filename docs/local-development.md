@@ -75,7 +75,7 @@ platform-bot local down
 | 5 | Installs ArgoCD via Helm (`argo/argo-cd`, NodePort on 30080) |
 | 6 | Waits for `argocd-server` deployment to become Ready |
 | 7 | Applies a mock `ClusterSecretStore` (Kubernetes native provider, replaces AWS Secrets Manager) |
-| 8 | Applies AppProjects and platform ApplicationSets in wave order |
+| 8 | Applies AppProjects and platform ApplicationSets (they converge by retry, ADR-0023) |
 | 9 | Prints the ArgoCD initial admin password |
 
 ---
@@ -171,7 +171,7 @@ platform-bot local up --env dev
 ### ApplicationSet sync errors after local up
 
 ArgoCD reconciles asynchronously. CRD-dependent resources (ESO, Kyverno)
-may fail on the first sync wave and self-heal once their CRDs are installed.
+may fail on their first sync and converge by retry once their CRDs are installed (ADR-0023).
 Wait 2–3 minutes and run:
 
 ```bash
