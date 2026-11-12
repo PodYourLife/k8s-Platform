@@ -2,18 +2,18 @@
 # Deterministic Terraform checks on the roots a PR touches, then an advisory
 # review by Claude (skill .claude/skills/pr-reviewer). The `agent-review` job
 # fails when the reviewer requests changes; the owner still merges by hand.
+#
+# terraform-checks runs on every push. The Claude review runs only when a PR is
+# opened ready for review, when a draft is marked ready, or on demand by adding
+# the `agent:review` label (removed automatically after the run).
 name: Agent review
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
 
 permissions: {}
-
-concurrency:
-  group: agent-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 env:
   TF_VERSION: "1.7.5"
@@ -21,7 +21,11 @@ env:
 jobs:
   terraform-checks:
     name: terraform-checks
+    if: github.event.action != 'labeled' || github.event.label.name == 'agent:review'
     runs-on: ubuntu-latest
+    concurrency:
+      group: terraform-checks-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     timeout-minutes: 15
     permissions:
       contents: read
@@ -89,12 +93,18 @@ jobs:
     name: agent-review
     needs: terraform-checks
     # Same-repo, non-draft PRs opened by humans only: fork PRs get no secrets,
-    # and the action rejects bot actors.
+    # and the action rejects bot actors. Skipped on plain pushes (synchronize).
     if: >-
+      (github.event.action == 'opened' || github.event.action == 'ready_for_review' ||
+       (github.event.action == 'labeled' && github.event.label.name == 'agent:review')) &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.type != 'Bot'
     runs-on: ubuntu-latest
+    # A push during a review must not cancel it: queue reviews instead.
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     timeout-minutes: 20
     permissions:
       contents: read
@@ -153,3 +163,10 @@ jobs:
             echo "::error::agent-review verdict is '$review_verdict'. See the review comments on the PR."
             exit 1
           fi
+
+      - name: Remove the agent:review label
+        if: always() && github.event.action == 'labeled'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label "agent:review"
