@@ -1,7 +1,7 @@
 ---
 adr: 0023
 title: "Dépendances entre Applications : convergence par réessai, sync-waves limitées à une Application"
-status: Proposé
+status: Accepté
 date: 2026-11-12
 recorded: 2026-11-12
 scope: [k8s-platform, platform-bot]
@@ -12,10 +12,10 @@ supersedes: [ADR-0003]
 
 # ADR-0023 — Dépendances entre Applications ArgoCD
 
-- **Statut** : Proposé
+- **Statut** : Accepté (2026-11-12)
 - **Date** : 2026-11-12
 - **Périmètre** : k8s-platform, platform-bot
-- **Remplace** : ADR-0003 (à l'acceptation)
+- **Remplace** : ADR-0003
 
 ## Contexte
 
