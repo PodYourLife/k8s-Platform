@@ -27,7 +27,6 @@ jobs:
     permissions:
       contents: write
       issues: write
-      pull-requests: write
     steps:
       - name: Require the Claude subscription token
         env:
@@ -50,6 +49,10 @@ jobs:
 
       # use_commit_signing commits through the GitHub API to the agent/ branch
       # only: Claude gets no git push and cannot write to main.
+      # Terraform: -chdir is allowed for init/validate, every state-changing or
+      # state-reading subcommand is denied (deny wins over allow). Deny rules match
+      # command text only; the hard boundary is that this runner holds no cloud
+      # credentials, so no provider or backend can be reached.
       - name: Implement
         uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
         with:
@@ -61,7 +64,8 @@ jobs:
           use_commit_signing: true
           claude_args: |
             --max-turns 60
-            --allowedTools "Bash(terraform fmt:*),Bash(terraform -chdir=:*),Bash(terraform validate:*)"
+            --allowedTools "Bash(terraform fmt *),Bash(terraform validate *),Bash(terraform -chdir=*)"
+            --disallowedTools "Bash(terraform*apply*),Bash(terraform*plan*),Bash(terraform*destroy*),Bash(terraform*import*),Bash(terraform*state*),Bash(terraform*taint*),Bash(terraform*console*),Bash(terraform*workspace*),Bash(terraform*login*)"
             --append-system-prompt "Before anything else, read .claude/skills/implementer/SKILL.md and follow it exactly. Write every comment and commit message in English."
 
       - name: Remove the agent:implement label
