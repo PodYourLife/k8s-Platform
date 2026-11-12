@@ -1,0 +1,76 @@
+# agent-implement.yml
+# Adding the `agent:implement` label to an issue makes Claude implement it on an
+# agent/ branch (skill .claude/skills/implementer). Claude never opens the PR:
+# the owner creates it from the link in the tracking comment, which triggers
+# terraform-checks and agent-review. The label is removed after each run.
+name: Agent implement
+
+on:
+  issues:
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  implement:
+    name: agent-implement
+    # Only issues written by the owner or collaborators: on a public repository
+    # anyone can open an issue, and its body becomes Claude's task description.
+    if: >-
+      github.event.label.name == 'agent:implement' &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: agent-implement-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Require the Claude subscription token
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "::error::Repository secret CLAUDE_CODE_OAUTH_TOKEN is missing (generate it with 'claude setup-token')."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.7.5"
+          terraform_wrapper: false
+
+      # use_commit_signing commits through the GitHub API to the agent/ branch
+      # only: Claude gets no git push and cannot write to main.
+      # Terraform: -chdir is allowed for init/validate, every state-changing or
+      # state-reading subcommand is denied (deny wins over allow). Deny rules match
+      # command text only; the hard boundary is that this runner holds no cloud
+      # credentials, so no provider or backend can be reached.
+      - name: Implement
+        uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          label_trigger: "agent:implement"
+          base_branch: main
+          branch_prefix: "agent/"
+          use_commit_signing: true
+          claude_args: |
+            --max-turns 60
+            --allowedTools "Bash(terraform fmt *),Bash(terraform validate *),Bash(terraform -chdir=*)"
+            --disallowedTools "Bash(terraform*apply*),Bash(terraform*plan*),Bash(terraform*destroy*),Bash(terraform*import*),Bash(terraform*state*),Bash(terraform*taint*),Bash(terraform*console*),Bash(terraform*workspace*),Bash(terraform*login*),Bash(terraform*refresh*),Bash(terraform*output*),Bash(terraform*force-unlock*),Bash(terraform*show*)"
+            --append-system-prompt "Before anything else, read .claude/skills/implementer/SKILL.md and follow it exactly. Write every comment and commit message in English."
+
+      - name: Remove the agent:implement label
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label "agent:implement"
