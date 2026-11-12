@@ -74,6 +74,8 @@ syncPolicy:
 
 Le réessai est explicite, et non laissé au comportement par défaut : par défaut, une synchronisation automatique ne réessaie que 5 fois (de 5 s à 80 s), puis n'est plus retentée sur le même commit. Une dépendance plus lente à arriver laisserait l'Application bloquée jusqu'au commit suivant.
 
+**Exception — Applications de l'AppProject `ml`** (amendement du 2026-11-12) : elles exécutent des Jobs batch d'entraînement sur GPU. Un réessai illimité relancerait indéfiniment un entraînement en échec et consommerait du temps GPU sans fin. Elles gardent un `retry` borné (`limit` fini, 3 par défaut), justifié par un commentaire qui renvoie à cette exception. Un échec définitif remonte par l'alerte de D4.
+
 ### D3 — Dépendances sur des CRD fournies par une autre Application
 
 Une Application qui crée des ressources personnalisées dont la CRD est installée par une autre Application (ExternalSecret, ServiceMonitor, ClusterPolicy, Certificate…) porte :
