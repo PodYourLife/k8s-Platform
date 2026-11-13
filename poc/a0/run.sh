@@ -99,8 +99,8 @@ fi
 
 # Criterion 3 — removing a contract key fails generation (missingkey=error).
 kubectl -n argocd label secret in-cluster platform.podyourlife.io/environment-
-if wait_until 120 appset_has_error poc-a0-contract "map has no entry for key"; then
-  report "3. Missing contract key fails generation" PASS "ErrorOccurred: map has no entry for key"
+if wait_until 120 appset_has_error poc-a0-contract "contract key platform.podyourlife.io/environment missing"; then
+  report "3. Missing contract key fails generation" PASS "ErrorOccurred: contract key platform.podyourlife.io/environment missing"
 else
   report "3. Missing contract key fails generation" FAIL "no ErrorOccurred condition after 120s"
   echo "::group::Diagnostics for criterion 3"

@@ -14,9 +14,15 @@ spec:
         selector:
           matchLabels:
             platform.podyourlife.io/managed: "true"
+        # missingkey=error does not cover `index` on a map: a missing label renders
+        # as "". Each contract key is read once here and fails generation if absent;
+        # templates then use .values.<key>, which missingkey=error does cover.
+        values:
+          environment: '{{ $value := index .metadata.labels "platform.podyourlife.io/environment" }}{{ if not $value }}{{ fail "contract key platform.podyourlife.io/environment missing" }}{{ end }}{{ $value }}'
+          cloud: '{{ $value := index .metadata.labels "platform.podyourlife.io/cloud" }}{{ if not $value }}{{ fail "contract key platform.podyourlife.io/cloud missing" }}{{ end }}{{ $value }}'
   template:
     metadata:
-      name: 'poc-a0-contract-{{index .metadata.labels "platform.podyourlife.io/environment"}}'
+      name: 'poc-a0-contract-{{.values.environment}}'
     spec:
       project: default
       source:
@@ -25,8 +31,8 @@ spec:
         path: poc/a0/chart
         helm:
           valueFiles:
-            - 'values-{{index .metadata.labels "platform.podyourlife.io/cloud"}}.yaml'
-            - 'values-{{index .metadata.labels "platform.podyourlife.io/environment"}}.yaml'
+            - 'values-{{.values.cloud}}.yaml'
+            - 'values-{{.values.environment}}.yaml'
       destination:
         server: '{{.server}}'
         namespace: poc-a0
