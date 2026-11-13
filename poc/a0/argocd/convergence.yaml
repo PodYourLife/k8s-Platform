@@ -19,7 +19,7 @@ spec:
     metadata:
       name: poc-a0-consumer
     spec:
-      project: default
+      project: default  # POC only: real Applications use the ADR-0004 AppProjects
       source:
         repoURL: https://github.com/PodYourLife/k8s-platform.git
         targetRevision: main
@@ -59,7 +59,7 @@ spec:
     metadata:
       name: poc-a0-crd
     spec:
-      project: default
+      project: default  # POC only: real Applications use the ADR-0004 AppProjects
       source:
         repoURL: https://github.com/PodYourLife/k8s-platform.git
         targetRevision: main

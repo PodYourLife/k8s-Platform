@@ -73,8 +73,26 @@ kubectl -n argocd rollout status statefulset/argocd-application-controller --tim
 kubectl create namespace poc-a0 --dry-run=client -o yaml | kubectl apply -f -
 echo "::endgroup::"
 
-# Criterion 1 — the cluster Secret carries the contract.
-kubectl apply -f "${POC_DIR}/cluster-secret.yaml"
+# Criterion 1 — the cluster Secret carries the contract (ADR-0001 D3). Built here,
+# never committed (ADR-0005); in real clusters platform-bot writes it (ADR-0001 D4).
+kubectl -n argocd create secret generic in-cluster \
+    --from-literal=name=in-cluster \
+    --from-literal=server=https://kubernetes.default.svc \
+    --from-literal=config='{"tlsClientConfig":{"insecure":false}}' \
+    --dry-run=client -o yaml \
+  | kubectl label --local -f - -o yaml \
+    argocd.argoproj.io/secret-type=cluster \
+    platform.podyourlife.io/managed=true \
+    platform.podyourlife.io/cloud=kind \
+    platform.podyourlife.io/environment=dev \
+    platform.podyourlife.io/region=local \
+    platform.podyourlife.io/identity_mode=none \
+    platform.podyourlife.io/secret_store_provider=kubernetes \
+  | kubectl annotate --local -f - -o yaml \
+    platform.podyourlife.io/cluster_name=poc-a0 \
+    platform.podyourlife.io/dataset_bucket= \
+    platform.podyourlife.io/identity_reference= \
+  | kubectl apply -f -
 contract_label_count="$(kubectl -n argocd get secret in-cluster -o json \
   | jq '[.metadata.labels, .metadata.annotations] | map(keys[]) | map(select(startswith("platform.podyourlife.io/"))) | length')"
 if [ "$contract_label_count" -ge 9 ]; then

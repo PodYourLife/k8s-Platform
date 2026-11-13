@@ -24,7 +24,7 @@ spec:
     metadata:
       name: 'poc-a0-contract-{{.values.environment}}'
     spec:
-      project: default
+      project: default  # POC only: real Applications use the ADR-0004 AppProjects
       source:
         repoURL: https://github.com/PodYourLife/k8s-platform.git
         targetRevision: main
