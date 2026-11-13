@@ -105,6 +105,33 @@ Règles associées :
 - **Aucune donnée sensible dans le contrat.** Seulement des identifiants publics (noms, ARN, OCID). Les secrets restent dans ESO.
 - `destination.server: '{{.server}}'` préserve le fix « destination environment-aware, 1 ArgoCD par cluster ».
 
+#### Amendement D3 (2026-11-13) — lecture des clés du contrat
+
+Le POC A0 ([run 43415033689](https://github.com/PodYourLife/k8s-Platform/actions/runs/43415033689), PR #63) a montré que `missingkey=error` ne protège **pas** les lectures par `index` : `{{index .metadata.labels "platform.podyourlife.io/environment"}}` rend une chaîne vide si le label manque. L'exemple ci-dessus ne garantit donc pas l'échec annoncé (« fail closed »).
+
+Règle qui s'applique désormais à tout ApplicationSet avec générateur *cluster* :
+
+```yaml
+generators:
+  - clusters:
+      selector:
+        matchLabels:
+          platform.podyourlife.io/managed: "true"
+      # Each contract key is read once, here, and fails generation if absent.
+      values:
+        environment: '{{ $value := index .metadata.labels "platform.podyourlife.io/environment" }}{{ if not $value }}{{ fail "contract key platform.podyourlife.io/environment missing" }}{{ end }}{{ $value }}'
+        cloud: '{{ $value := index .metadata.labels "platform.podyourlife.io/cloud" }}{{ if not $value }}{{ fail "contract key platform.podyourlife.io/cloud missing" }}{{ end }}{{ $value }}'
+template:
+  metadata:
+    name: 'external-secrets-{{.values.environment}}'
+  # ... valueFiles: values-{{.values.cloud}}.yaml, values-{{.values.environment}}.yaml
+```
+
+- Une clé du contrat n'est lue par `index` **que** dans `values` du générateur, toujours avec ce garde-fou `fail`.
+- Les templates n'utilisent que `.values.<clé>`, couvert par `missingkey=error`, qui reste obligatoire.
+- Validé sur Kind : une clé absente fait échouer la génération (`ErrorOccurred`), et les Applications existantes sont conservées, pas supprimées.
+- L'annotation `sync-wave` de l'exemple ci-dessus est caduque (ADR-0023 D1).
+
 ### D4 — Qui écrit le contrat
 
 `platform-bot bootstrap` exécute `terraform output -json`, valide la sortie contre le schéma du contrat, puis crée le Secret de cluster via client-go.
