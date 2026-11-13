@@ -49,6 +49,9 @@ any of these is true:
   `argocd.argoproj.io/sync-wave`, an explicit `syncPolicy.retry`, and
   `SkipDryRunOnMissingResource=true` when they use a CRD owned by another Application.
   Comments describe real dependencies, never wave numbers.
+- Cluster-generator ApplicationSets read contract keys once in the generator
+  `values` with a `fail` guard, and templates use `.values.<key>`, never
+  `index .metadata.labels` (ADR-0001 D3 amendment).
 - Keep every file you write under 200 lines.
 - Comments in English, explaining why rather than what.
 

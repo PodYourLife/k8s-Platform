@@ -57,6 +57,10 @@ Each finding must cite the ADR or the security rule it breaks.
 - No hardcoded region, account ID or cloud name in modules, charts or values files.
 - ApplicationSets using the cluster generator: `goTemplateOptions: ["missingkey=error"]`,
   `destination.server: '{{.server}}'`, contract keys under `platform.podyourlife.io/`.
+- Contract keys are read with `index` only in the cluster generator `values`, each
+  guarded by `{{ if not $value }}{{ fail "contract key ... missing" }}{{ end }}`;
+  templates use `.values.<key>`. `index .metadata.labels` in a template is blocking:
+  `missingkey=error` does not cover it (ADR-0001 D3 amendment, 2026-11-13).
 - `ignoreMissingValueFiles` is forbidden (ADR-0001 D3).
 
 **ArgoCD (ADR-0002, 0004, 0023)**
