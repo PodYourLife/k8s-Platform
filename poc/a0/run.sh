@@ -100,7 +100,13 @@ fi
 # Criterion 3 — removing a contract key fails generation (missingkey=error).
 kubectl -n argocd label secret in-cluster platform.podyourlife.io/environment-
 if wait_until 120 appset_has_error poc-a0-contract "contract key platform.podyourlife.io/environment missing"; then
-  report "3. Missing contract key fails generation" PASS "ErrorOccurred: contract key platform.podyourlife.io/environment missing"
+  # Fail closed must not mean "delete": the existing Application has to survive.
+  sleep 30
+  if kubectl -n argocd get application "$contract_app" > /dev/null 2>&1; then
+    report "3. Missing contract key fails generation" PASS "ErrorOccurred: contract key missing; ${contract_app} kept, not pruned"
+  else
+    report "3. Missing contract key fails generation" FAIL "generation failed but ${contract_app} was deleted"
+  fi
 else
   report "3. Missing contract key fails generation" FAIL "no ErrorOccurred condition after 120s"
   echo "::group::Diagnostics for criterion 3"
