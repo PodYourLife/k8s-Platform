@@ -1,0 +1,6 @@
+apiVersion: poc.podyourlife.io/v1
+kind: Widget
+metadata:
+  name: poc-a0-widget
+spec:
+  size: small

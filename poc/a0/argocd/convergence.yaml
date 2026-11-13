@@ -1,0 +1,82 @@
+# ADR-0023 convergence test. poc-a0-consumer creates a Widget whose CRD is owned
+# by poc-a0-crd. run.sh applies the consumer first, checks that its sync fails,
+# then applies the CRD Application and expects the consumer to converge by retry.
+# targetRevision is set to the commit under test by poc/a0/run.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: poc-a0-consumer
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform.podyourlife.io/managed: "true"
+  template:
+    metadata:
+      name: poc-a0-consumer
+    spec:
+      project: default  # POC only: real Applications use the ADR-0004 AppProjects
+      source:
+        repoURL: https://github.com/PodYourLife/k8s-platform.git
+        targetRevision: main
+        path: poc/a0/consumer
+      destination:
+        server: '{{.server}}'
+        namespace: poc-a0
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: -1  # ADR-0023 D2
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
+        syncOptions:
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true  # CRD owned by poc-a0-crd (ADR-0023 D3)
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: poc-a0-crd
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform.podyourlife.io/managed: "true"
+  template:
+    metadata:
+      name: poc-a0-crd
+    spec:
+      project: default  # POC only: real Applications use the ADR-0004 AppProjects
+      source:
+        repoURL: https://github.com/PodYourLife/k8s-platform.git
+        targetRevision: main
+        path: poc/a0/crd
+      destination:
+        server: '{{.server}}'
+        namespace: poc-a0
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: -1  # ADR-0023 D2
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
+        syncOptions:
+          - ServerSideApply=true

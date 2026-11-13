@@ -1,0 +1,41 @@
+# poc-a0.yml
+# ADR-0001 POC A0 on Kind, plus the ADR-0023 convergence test (poc/a0/run.sh).
+# Runs on demand, and on PRs that touch the POC. Results go to the job summary.
+name: POC A0 (Kind)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "poc/a0/**"
+      - ".github/workflows/poc-a0.yml"
+
+permissions: {}
+
+concurrency:
+  group: poc-a0-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  poc-a0:
+    name: poc-a0
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          cluster_name: poc-a0
+
+      - name: Run POC A0
+        env:
+          # Argo CD fetches this commit from GitHub: use the PR head, not the merge commit.
+          POC_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+          ARGOCD_VERSION: v3.6.1
+        run: bash poc/a0/run.sh

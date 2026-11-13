@@ -1,0 +1,5 @@
+apiVersion: v2
+name: poc-a0-contract
+description: ADR-0001 POC A0 — proves that cloud and environment values come from the cluster contract.
+type: application
+version: 0.1.0
