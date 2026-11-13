@@ -1,0 +1,45 @@
+# ADR-0001 POC A0, criteria 2-4: the cluster generator reads the contract from
+# the cluster Secret and selects values-<cloud>.yaml and values-<environment>.yaml.
+# targetRevision is set to the commit under test by poc/a0/run.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: poc-a0-contract
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]  # criterion 3: fail closed on missing contract keys
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform.podyourlife.io/managed: "true"
+  template:
+    metadata:
+      name: 'poc-a0-contract-{{index .metadata.labels "platform.podyourlife.io/environment"}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/PodYourLife/k8s-platform.git
+        targetRevision: main
+        path: poc/a0/chart
+        helm:
+          valueFiles:
+            - 'values-{{index .metadata.labels "platform.podyourlife.io/cloud"}}.yaml'
+            - 'values-{{index .metadata.labels "platform.podyourlife.io/environment"}}.yaml'
+      destination:
+        server: '{{.server}}'
+        namespace: poc-a0
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: -1  # ADR-0023 D2
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+          refresh: true
+        syncOptions:
+          - ServerSideApply=true

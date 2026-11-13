@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: poc-a0-contract
+data:
+  cloudSource: {{ .Values.cloudSource | quote }}
+  environmentSource: {{ .Values.environmentSource | quote }}
