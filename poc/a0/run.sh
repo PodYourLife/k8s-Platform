@@ -103,6 +103,10 @@ if wait_until 120 appset_has_error poc-a0-contract "map has no entry for key"; t
   report "3. Missing contract key fails generation" PASS "ErrorOccurred: map has no entry for key"
 else
   report "3. Missing contract key fails generation" FAIL "no ErrorOccurred condition after 120s"
+  echo "::group::Diagnostics for criterion 3"
+  kubectl -n argocd get applicationset poc-a0-contract -o json | jq '.status.conditions'
+  kubectl -n argocd get applications -o wide
+  echo "::endgroup::"
 fi
 kubectl -n argocd label secret in-cluster platform.podyourlife.io/environment=dev --overwrite
 
